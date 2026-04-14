@@ -41,5 +41,9 @@ provider "aws" {
     ssm            = "http://localhost:4566"
     stepfunctions  = "http://localhost:4566"
     sts            = "http://localhost:4566"
+    # missing S3control causing "listing tag for S3 bucket; https response error StatusCode: 403"
+    #s3control = "http://localhost:4566"
+    # the previous s3control not align with s3 format, now make them alignment
+    s3control = "http://localhost.localstack.cloud:4566"
   }
 }

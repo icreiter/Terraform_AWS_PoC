@@ -1,15 +1,16 @@
-
+#### Cancel the remark####
+#Dynamically fetch the latest Amazon Linux 2 AMI to prevent "InvalidAMIID" errors and ensure cross-region compatibility.
 ### Localstack cannot find AMI, changing to fix AMI ID
 # Search the latest Amazon linux 2 AMI version
-# data "aws_ami" "amazon_linux_2" {
-#   most_recent = true
-#   owners      = ["amazon"]
+data "aws_ami" "amazon_linux_2" {
+  most_recent = true
+  owners      = ["amazon"]
 
-#   filter {
-#     name   = "name"
-#     values = ["amzn2-ami-hvm-*-x86_64-gp2"]
-#   }
-# }
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+}
 
 # SSH Key Pair
 # 1. Dynamically generate a RSA private key via Terraform
@@ -27,8 +28,8 @@ resource "aws_key_pair" "bastion_key_pair" {
 # 3. Create EC2 bastion into public subnet
 resource "aws_instance" "bastion_host" {
   # ami           = data.aws_ami.amazon_linux_2.id 
-  ### Let localstack can get the ami ###
-  ami           = "ami-0c55b159cbfafe1f0"
+  # Cancel the random form of AMI, back to data sourcing ### Let localstack can get the ami ###
+  ami           = data.aws_ami.amazon_linux_2.id #"ami-0c55b159cbfafe1f0"
   instance_type = "t3.micro"
   subnet_id     = aws_subnet.public_subnet.id
 
@@ -37,6 +38,15 @@ resource "aws_instance" "bastion_host" {
   # Associating with security group
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
 
+  # Bootstrap for EC2 initialization
+  user_data = <<-EOF
+              #!/bin/bash
+              # Update dependency
+              sudo yum update -y
+              # Install MariaDB(MySQL) to connect RDS
+              sudo yum install -y mariadb
+
+              EOF
   tags = {
     Name = "Bastion-Host"
   }
@@ -45,8 +55,9 @@ resource "aws_instance" "bastion_host" {
 
 # Subnet group for RDS
 resource "aws_db_subnet_group" "rds_group" {
-  name       = "main_db_group"
-  subnet_ids = [aws_subnet.private_subnet.id]
+  name = "main_db_group"
+  # add 2nd private subnet 
+  subnet_ids = [aws_subnet.private_subnet.id, aws_subnet.private_subnet_2.id]
 
   tags = {
     Name = "My-DB-Subnet-Group"

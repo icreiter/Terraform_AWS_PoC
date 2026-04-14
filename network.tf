@@ -53,10 +53,24 @@ resource "aws_subnet" "private_subnet" {
   map_public_ip_on_launch = false # never provide public network IP
 
   tags = {
-    Name = "Public-Subnet-DB"
+    Name = "Prevate-Subnet-DB"
   }
 
 }
+
+# Create 2nd private subnet to meet AZ coverage requirement!
+resource "aws_subnet" "private_subnet_2" {
+  vpc_id     = aws_vpc.main_vpc.id
+  cidr_block = "10.0.3.0/24" # new range to other subnet
+
+  # Chosse 2nd available AZ
+  availability_zone = data.aws_availability_zones.available.names[1]
+
+  tags = {
+    Name = "Private-Subnet-2"
+  }
+}
+
 
 # 5. Create public route table
 resource "aws_route_table" "public_rt" {
